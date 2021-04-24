@@ -622,7 +622,7 @@ class HyperHeader(object):
         semData = root.find("./ClassInstance[@Type='TRTSEMData']")
         self.sem_metadata = dictionarize(semData)
         # parse values for use in hspy metadata:
-        self.hv = self.sem_metadata.get('HV', 80.0)  # in kV
+        self.hv = self.sem_metadata.get('HV', 0.0)  # in kV
         # image/hypermap resolution in um/pixel:
         if 'DX' in self.sem_metadata:
             self.units = 'µm'
