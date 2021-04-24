@@ -303,6 +303,9 @@ class SFS_reader(object):
     ----------
     filename
 
+    Methods
+    -------
+    get_file
     """
 
     def __init__(self, filename):
@@ -429,7 +432,7 @@ class SFS_reader(object):
         Returns
         -------
         object : SFSTreeItem
-            SFSTreeItem, which can be read into byte stream, in chunks or
+            SFSTreeItem, which can be read into byte stream, in chunks or 
             whole using objects methods.
 
         Example
@@ -497,30 +500,37 @@ class EDXSpectrum(object):
 
         Parameters
         ----------
-        spectrum : etree xml object
+        spectrum : etree xml object 
             etree xml object, where spectrum.attrib['Type'] should
             be 'TRTSpectrum'.
         """
+        _logger.debug('edxs init')
         TRTHeader = spectrum.find('./TRTHeaderedClass')
+        _logger.debug('edxs init 1')
         hardware_header = TRTHeader.find(
             "./ClassInstance[@Type='TRTSpectrumHardwareHeader']")
         detector_header = TRTHeader.find(
             "./ClassInstance[@Type='TRTDetectorHeader']")
+        
+        
         esma_header = TRTHeader.find(
             "./ClassInstance[@Type='TRTESMAHeader']")
+        if not esma_header:
+            _logger.debug('no esma header')
         # what TRT means?
         # ESMA could stand for Electron Scanning Microscope Analysis
         spectrum_header = spectrum.find(
             "./ClassInstance[@Type='TRTSpectrumHeader']")
-        xrf_header = TRTHeader.find("./ClassInstance[@Type='TRTXrfHeader']")
+        _logger.debug('edxs init 2')
 
         # map stuff from harware xml branch:
         self.hardware_metadata = dictionarize(hardware_header)
         self.amplification = self.hardware_metadata['Amplification']  # USED
-
+        _logger.debug('edxs init 3')
         # map stuff from detector xml branch
         self.detector_metadata = dictionarize(detector_header)
         self.detector_type = self.detector_metadata['Type']  # USED
+        _logger.debug('edxs init 4')
 
         # decode silly hidden detector layer info:
         det_l_str = self.detector_metadata['DetLayers']
@@ -529,30 +539,27 @@ class EDXSpectrum(object):
         self.detector_metadata['DetLayers'] = {}  # Overwrite with dict
         for i in list(mini_xml):
             self.detector_metadata['DetLayers'][i.tag] = dict(i.attrib)
-
+        _logger.debug('edxs init 5')
         # map stuff from esma xml branch:
-        if esma_header:
-            self.esma_metadata = dictionarize(esma_header)
-        if xrf_header:
-            xrf_header_dict = dictionarize(xrf_header)
-            self.esma_metadata = {
-                'PrimaryEnergy':xrf_header_dict['Voltage'],
-                'ElevationAngle':xrf_header_dict['ExcitationAngle']
-                }
-        # USED:
-        self.hv = self.esma_metadata['PrimaryEnergy']
-        self.elev_angle = self.esma_metadata['ElevationAngle']
+        # self.esma_metadata = dictionarize(esma_header)
+        # # USED:
+        # _logger.debug('edxs init 5.1')
+        # self.hv = self.esma_metadata['PrimaryEnergy']
+        # self.elev_angle = self.esma_metadata['ElevationAngle']
+        # _logger.debug('edxs init 5.2')
         date_time = gen_iso_date_time(spectrum_header)
         if date_time is not None:
             self.date, self.time = date_time
-
+        _logger.debug('edxs init 6')
+        # map stuff from spectra xml branch:
         self.spectrum_metadata = dictionarize(spectrum_header)
         self.offset = self.spectrum_metadata['CalibAbs']
         self.scale = self.spectrum_metadata['CalibLin']
-
+        _logger.debug('edxs init 7')
         # main data:
         self.data = np.fromstring(spectrum.find('./Channels').text,
                                   dtype='Q', sep=",")
+        _logger.debug('edxs init 8')
 
     def energy_to_channel(self, energy, kV=True):
         """ convert energy to channel index,
@@ -585,7 +592,9 @@ class HyperHeader(object):
     """
 
     def __init__(self, xml_str, indexes, instrument=None):
+        _logger.debug('HypHead init begin')
         root = ET.fromstring(xml_str)
+        _logger.debug('root')
         root = root.find("./ClassInstance[@Type='TRTSpectrumDatabase']")
         try:
             self.name = str(root.attrib['Name'])
@@ -596,17 +605,19 @@ class HyperHeader(object):
         self.date, self.time = gen_iso_date_time(hd)
         self.version = int(literal_eval(hd.find('./FileVersion').text))
         # fill the sem and stage attributes:
-        self._set_microscope(root)
+        self._set_microscope(root)        
         self._set_mode(instrument)
         self._set_images(root)
         self.elements = {}
-        self._set_elements(root)
+        self._set_elements(root)        
         self.line_counter = interpret(root.find('./LineCounter').text)
         self.channel_count = int(root.find('./ChCount').text)
         self.mapping_count = int(root.find('./DetectorCount').text)
         #self.channel_factors = {}
         self.spectra_data = {}
+        _logger.debug('hh init mid')
         self._set_sum_edx(root, indexes)
+        _logger.debug('hh init done')
 
     def _set_microscope(self, root):
         """set microscope metadata from objectified xml part (TRTSEMData,
@@ -648,13 +659,13 @@ class HyperHeader(object):
         mandatory data
         """
         acq_inst = {'beam_energy': self.hv}
-        if 'Mag' in self.sem_metadata:
-            acq_inst['magnification'] = self.sem_metadata['Mag']
-        if detector:
-            eds_metadata = self.get_spectra_metadata(**kwargs)
-            det = gen_detector_node(eds_metadata)
-            det['EDS']['real_time'] = self.calc_real_time()
-            acq_inst['Detector'] = det
+        # if 'Mag' in self.sem_metadata:
+        #     acq_inst['magnification'] = self.sem_metadata['Mag']
+        # if detector:
+        #     eds_metadata = self.get_spectra_metadata(**kwargs)
+        #     det = gen_detector_node(eds_metadata)
+        #     det['EDS']['real_time'] = self.calc_real_time()
+        #     acq_inst['Detector'] = det
         return acq_inst
 
     def _parse_image(self, xml_node, overview=False):
@@ -747,9 +758,12 @@ class HyperHeader(object):
             _logger.info('no element selection present in the spectra..')
 
     def _set_sum_edx(self, root, indexes):
+        _logger.debug('_set_sum_edx begin')
         for i in indexes:
+            _logger.debug(i)
             spec_node = root.find(
                 "./SpectrumData{0}/ClassInstance".format(str(i)))
+            _logger.debug('sp node')
             self.spectra_data[i] = EDXSpectrum(spec_node)
 
     def estimate_map_channels(self, index=0):
@@ -782,15 +796,15 @@ class HyperHeader(object):
         Parameters
         ----------
         index : int
-            Index of the hypermap if multiply hypermaps are present in the
+            Index of the hypermap if multiply hypermaps are present in the 
             same bcf. (default 0)
         downsample : int
             Downsample factor. (default 1)
         for_numpy : bool
-            If False produce unsigned, otherwise signed types: if hypermap
+            If False produce unsigned, otherwise signed types: if hypermap 
             will be loaded using the pure python function where numpy's inplace
             integer addition will be used, the dtype should be signed;
-            If cython implementation will be used (default), then any returned
+            If cython implementation will be used (default), then any returned 
             dtypes can be safely unsigned. (default False)
 
         Returns
@@ -903,6 +917,7 @@ class BCF_reader(SFS_reader):
         self.def_index = min(self.available_indexes)
         header_byte_str = header_file.get_as_BytesIO_string().getvalue()
         hd_bt_str = fix_dec_patterns.sub(b'\\1.\\2', header_byte_str)
+        _logger.debug('bcf reader init half')
         self.header = HyperHeader(
             hd_bt_str, self.available_indexes, instrument=instrument)
         self.hypermap = {}
@@ -932,15 +947,15 @@ class BCF_reader(SFS_reader):
             The index of hypermap in bcf if there is more than one
             hyper map in file.
         downsample : int
-            Downsampling factor. Differently than block_reduce from
-            skimage.measure, the parser populates reduced array by suming
-            results of pixels, thus having lower memory requiriments. Default
+            Downsampling factor. Differently than block_reduce from 
+            skimage.measure, the parser populates reduced array by suming 
+            results of pixels, thus having lower memory requiriments. Default 
             is 1.
         cutoff_at_kV : None or float
             Value in keV to truncate the array at. Helps reducing size of
             array. Default is None.
         lazy : bool
-            It True, returns dask.array otherwise a numpy.array. Default is
+            It True, returns dask.array otherwise a numpy.array. Default is 
             False.
 
         Returns
@@ -954,7 +969,8 @@ class BCF_reader(SFS_reader):
             eds = self.header.spectra_data[index]
             max_chan = eds.energy_to_channel(cutoff_at_kV)
         else:
-            max_chan = self.header.estimate_map_channels(index=index)
+            # max_chan = self.header.estimate_map_channels(index=index)
+            max_chan = 4096
         shape = (ceil(self.header.image.height / downsample),
                  ceil(self.header.image.width / downsample),
                  max_chan)
@@ -997,6 +1013,7 @@ def spx_reader(filename, lazy=False):
         name = 'Undefinded'
         _logger.info("spectra have no name. Giving it 'Undefined' name")
     spectrum = EDXSpectrum(sp_node)
+    spectrum.hv = 20 #patch!
     mode = guess_mode(spectrum.hv)
     results_xml = sp_node.find("./ClassInstance[@Type='TRTResult']")
     elements_xml = sp_node.find("./ClassInstance[@Type='TRTPSEElementList']")
@@ -1025,7 +1042,7 @@ def spx_reader(filename, lazy=False):
                },
                'original_metadata': {'Hardware': spectrum.hardware_metadata,
                                      'Detector': spectrum.detector_metadata,
-                                     'Analysis': spectrum.esma_metadata,
+                                     #'Analysis': spectrum.esma_metadata,
                                      'Spectrum': spectrum.spectrum_metadata, }
                }
     if results_xml is not None:
@@ -1237,7 +1254,7 @@ def bcf_reader(filename, select_type=None, index=None,  # noqa
         or just hyper spectral mapping data (default None).
     index : int, None or str
         Index of dataset in bcf v2 can be None integer and 'all'
-        (default None); None will select first available mapping if more than
+        (default None); None will select first available mapping if more than 
         one. 'all' will return all maps if more than one present;
         integer will return only selected map.
     downsample : int
@@ -1357,7 +1374,7 @@ For more information, check the 'Installing HyperSpy' section in the documentati
              },
                 'original_metadata': {'Hardware': eds_metadata.hardware_metadata,
                                       'Detector': eds_metadata.detector_metadata,
-                                      'Analysis': eds_metadata.esma_metadata,
+                                      # 'Analysis': eds_metadata.esma_metadata,
                                       'Spectrum': eds_metadata.spectrum_metadata,
                                       'DSP Configuration': obj_bcf.header.dsp_metadata,
                                       'Line counter': obj_bcf.header.line_counter,
@@ -1418,13 +1435,14 @@ def guess_mode(hv):
 
 
 def gen_detector_node(spectrum):
-    eds_dict = {'EDS': {'elevation_angle': spectrum.elev_angle,
-                        'detector_type': spectrum.detector_type, }}
-    if 'AzimutAngle' in spectrum.esma_metadata:
-        eds_dict['EDS']['azimuth_angle'] = spectrum.esma_metadata['AzimutAngle']
-    if 'RealTime' in spectrum.hardware_metadata:
-        eds_dict['EDS']['real_time'] = spectrum.hardware_metadata['RealTime'] / 1000
-        eds_dict['EDS']['live_time'] = spectrum.hardware_metadata['LifeTime'] / 1000
+    # eds_dict = {'EDS': {'elevation_angle': spectrum.elev_angle,
+    #                     'detector_type': spectrum.detector_type, }}
+    # if 'AzimutAngle' in spectrum.esma_metadata:
+    #     eds_dict['EDS']['azimuth_angle'] = spectrum.esma_metadata['AzimutAngle']
+    # if 'RealTime' in spectrum.hardware_metadata:
+    #     eds_dict['EDS']['real_time'] = spectrum.hardware_metadata['RealTime'] / 1000
+    #     eds_dict['EDS']['live_time'] = spectrum.hardware_metadata['LifeTime'] / 1000
+    eds_dict = {}
     return eds_dict
 
 
