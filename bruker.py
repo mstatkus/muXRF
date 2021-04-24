@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#
+# !!!! patched version to handle muXRF files
 # Copyright 2016 Petras Jokubauskas
 # Copyright 2016 The HyperSpy developers
 #
@@ -504,9 +504,7 @@ class EDXSpectrum(object):
             etree xml object, where spectrum.attrib['Type'] should
             be 'TRTSpectrum'.
         """
-        _logger.debug('edxs init')
         TRTHeader = spectrum.find('./TRTHeaderedClass')
-        _logger.debug('edxs init 1')
         hardware_header = TRTHeader.find(
             "./ClassInstance[@Type='TRTSpectrumHardwareHeader']")
         detector_header = TRTHeader.find(
@@ -516,21 +514,17 @@ class EDXSpectrum(object):
         esma_header = TRTHeader.find(
             "./ClassInstance[@Type='TRTESMAHeader']")
         if not esma_header:
-            _logger.debug('no esma header')
         # what TRT means?
         # ESMA could stand for Electron Scanning Microscope Analysis
         spectrum_header = spectrum.find(
             "./ClassInstance[@Type='TRTSpectrumHeader']")
-        _logger.debug('edxs init 2')
 
         # map stuff from harware xml branch:
         self.hardware_metadata = dictionarize(hardware_header)
         self.amplification = self.hardware_metadata['Amplification']  # USED
-        _logger.debug('edxs init 3')
         # map stuff from detector xml branch
         self.detector_metadata = dictionarize(detector_header)
         self.detector_type = self.detector_metadata['Type']  # USED
-        _logger.debug('edxs init 4')
 
         # decode silly hidden detector layer info:
         det_l_str = self.detector_metadata['DetLayers']
@@ -539,28 +533,21 @@ class EDXSpectrum(object):
         self.detector_metadata['DetLayers'] = {}  # Overwrite with dict
         for i in list(mini_xml):
             self.detector_metadata['DetLayers'][i.tag] = dict(i.attrib)
-        _logger.debug('edxs init 5')
-        # map stuff from esma xml branch:
+        # map stuff from esma xml branch:  PATCHED!
         # self.esma_metadata = dictionarize(esma_header)
         # # USED:
-        # _logger.debug('edxs init 5.1')
         # self.hv = self.esma_metadata['PrimaryEnergy']
         # self.elev_angle = self.esma_metadata['ElevationAngle']
-        # _logger.debug('edxs init 5.2')
         date_time = gen_iso_date_time(spectrum_header)
         if date_time is not None:
             self.date, self.time = date_time
-        _logger.debug('edxs init 6')
         # map stuff from spectra xml branch:
         self.spectrum_metadata = dictionarize(spectrum_header)
         self.offset = self.spectrum_metadata['CalibAbs']
         self.scale = self.spectrum_metadata['CalibLin']
-        _logger.debug('edxs init 7')
         # main data:
         self.data = np.fromstring(spectrum.find('./Channels').text,
                                   dtype='Q', sep=",")
-        _logger.debug('edxs init 8')
-
     def energy_to_channel(self, energy, kV=True):
         """ convert energy to channel index,
         optional kwarg 'kV' (default: True) should be set to False
@@ -592,9 +579,7 @@ class HyperHeader(object):
     """
 
     def __init__(self, xml_str, indexes, instrument=None):
-        _logger.debug('HypHead init begin')
         root = ET.fromstring(xml_str)
-        _logger.debug('root')
         root = root.find("./ClassInstance[@Type='TRTSpectrumDatabase']")
         try:
             self.name = str(root.attrib['Name'])
@@ -615,9 +600,7 @@ class HyperHeader(object):
         self.mapping_count = int(root.find('./DetectorCount').text)
         #self.channel_factors = {}
         self.spectra_data = {}
-        _logger.debug('hh init mid')
         self._set_sum_edx(root, indexes)
-        _logger.debug('hh init done')
 
     def _set_microscope(self, root):
         """set microscope metadata from objectified xml part (TRTSEMData,
@@ -659,7 +642,7 @@ class HyperHeader(object):
         mandatory data
         """
         acq_inst = {'beam_energy': self.hv}
-        # if 'Mag' in self.sem_metadata:
+        # if 'Mag' in self.sem_metadata: PATCHED
         #     acq_inst['magnification'] = self.sem_metadata['Mag']
         # if detector:
         #     eds_metadata = self.get_spectra_metadata(**kwargs)
@@ -758,12 +741,9 @@ class HyperHeader(object):
             _logger.info('no element selection present in the spectra..')
 
     def _set_sum_edx(self, root, indexes):
-        _logger.debug('_set_sum_edx begin')
         for i in indexes:
-            _logger.debug(i)
             spec_node = root.find(
                 "./SpectrumData{0}/ClassInstance".format(str(i)))
-            _logger.debug('sp node')
             self.spectra_data[i] = EDXSpectrum(spec_node)
 
     def estimate_map_channels(self, index=0):
@@ -917,7 +897,6 @@ class BCF_reader(SFS_reader):
         self.def_index = min(self.available_indexes)
         header_byte_str = header_file.get_as_BytesIO_string().getvalue()
         hd_bt_str = fix_dec_patterns.sub(b'\\1.\\2', header_byte_str)
-        _logger.debug('bcf reader init half')
         self.header = HyperHeader(
             hd_bt_str, self.available_indexes, instrument=instrument)
         self.hypermap = {}
@@ -969,7 +948,7 @@ class BCF_reader(SFS_reader):
             eds = self.header.spectra_data[index]
             max_chan = eds.energy_to_channel(cutoff_at_kV)
         else:
-            # max_chan = self.header.estimate_map_channels(index=index)
+            # max_chan = self.header.estimate_map_channels(index=index) PATCHED!
             max_chan = 4096
         shape = (ceil(self.header.image.height / downsample),
                  ceil(self.header.image.width / downsample),
