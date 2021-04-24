@@ -516,7 +516,7 @@ class EDXSpectrum(object):
         if not esma_header:
         # what TRT means?
         # ESMA could stand for Electron Scanning Microscope Analysis
-        spectrum_header = spectrum.find(
+            spectrum_header = spectrum.find(
             "./ClassInstance[@Type='TRTSpectrumHeader']")
 
         # map stuff from harware xml branch:
