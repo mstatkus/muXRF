@@ -37,7 +37,14 @@ def get_image_size_mm(hmap):
     
     return (w_mm, h_mm)
 
-
+def extract_mosaic(bcf):
+    r=bcf[1].data
+    g=bcf[2].data
+    b=bcf[3].data
+    rgb = np.stack((r,g,b),axis=-1)
+    
+    return rgb
+    
 
 #%% bcf load, extract hmap
 
@@ -51,12 +58,21 @@ for import_file in filelist:
 
     print ('Processing file: {} ...'.format(import_file), end='')
     bcf=hs.load(import_file)
-    # first 3 items in bcf are mosaic images, skipping them...
-    #TODO: select hypermap by content, not by position 
-    hmap=bcf[4] 
+    # zero item in bcf is lowres grayscale mosaic
+    # items 1-3 are mosaic image channels R,G,B
+    
+    mosaic_hires = extract_mosaic(bcf)
+
+    mosaic_lowres = bcf[0].data
+    
+    hmap=bcf[4]
+    
     print (' done.')
     print ('Extracting hypermap data... ',end='')
     
+    # don't know wheter it is a good place to store images...
+    hmap.metadata.mosaic_hires = mosaic_hires
+    hmap.metadata.mosaic_lowres = mosaic_lowres
     
     # We need to set beam_energy to arbitrary high value, e.g. 80 kEv,
     # to work with SEM class with XRF data
