@@ -29,8 +29,16 @@ from datetime import datetime
 
 import csv
 
-workdir = u'C:/Users/Михаил/Google Диск/археология/IRK/hspy' #vivo book
+workdir = u'C:/Users/Михаил/Google Диск/археология/FNG/hspy_maps' #vivo book
 os.chdir(workdir)
+
+# "full" list of elements for ceramics
+full_element_list = ['Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'K', 'Ca', 
+                     'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu',
+                     'Zn', 'Rb', 'Sr', 'Y', 'Zr', 'Ba', 'La', 'Ce', 'W']
+
+#set true to replace original elements with full list above
+replace_element_list = True 
 
 #%% functions
 def get_element_map(element_name,int_maps):
@@ -198,10 +206,21 @@ def process_single_element(elt_name, intensity_maps, mask,
     plt.savefig(export_filename,bbox_inches='tight')
     plt.close(fig)
 #%% load hspy
-hmap_file = 'IRK-66.hspy'
+hmap_file = 'SNP-W-07-2-U-map-1mm.hspy'
 hmap = hs.load(hmap_file)
 
 # process hspy
+
+if replace_element_list:
+    print ('Replacing original elements with custom list...',end='')
+   
+    hmap.set_elements([]) #TODO - check whether clearing is necessary
+    hmap.set_lines([])
+    
+    hmap.set_elements(full_element_list)
+    hmap.add_lines()
+    print ('done.')
+
 intensity_maps = hmap.get_lines_intensity()
 elements = hmap.metadata.Sample.elements
 image_size_mm = hmap.metadata.image_size_mm
@@ -229,7 +248,7 @@ si_f = nd.gaussian_filter(si, 1) #blur si map
 # plot temp histogram for selection of cutoff
 plot_hist(si_f,log=False)
 #%% set cutoff value
-cutoff = 20
+cutoff = 25
 
 si_f_masked = np.ma.masked_less(si_f,cutoff)
 
