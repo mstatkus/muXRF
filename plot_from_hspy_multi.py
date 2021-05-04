@@ -3,6 +3,8 @@
 Created on Wed Apr 21 10:32:44 2021
 
 @author: Михаил
+
+script for plotting several projections on single figure
 """
 
 import hyperspy.api as hs
