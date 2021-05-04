@@ -3,6 +3,8 @@
 Created on Fri Apr 30 12:57:19 2021
 
 @author: Mike
+
+script for plotting all maps and histograms from a dir of hspy files
 """
 
 
@@ -11,6 +13,14 @@ import hyperspy.api as hs
 import matplotlib.pyplot as plt
 from pathlib import Path
 import glob
+
+# "full" list of elements for ceramics
+full_element_list = ['Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'K', 'Ca', 
+                     'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu',
+                     'Zn', 'Rb', 'Sr', 'Y', 'Zr', 'Ba', 'La', 'Ce', 'W']
+
+#set true to replace original elements with full list above
+replace_element_list = True 
 
 #%%
 def plot_hist(elt,caption=None):
@@ -64,6 +74,17 @@ for import_file in filelist:
 
     hmap = hs.load(import_file)
     print ('done')
+    
+    if replace_element_list:
+        print ('Replacing original elements with custom list...',end='')
+        #%% test - clear elements and lines
+        hmap.set_elements([]) #TODO - check whether clearing is necessary
+        hmap.set_lines([])
+        
+        hmap.set_elements(full_element_list)
+        hmap.add_lines()
+        print ('done.')
+    
     
     print('Extracting data...')
     intensity_maps = hmap.get_lines_intensity()
