@@ -127,7 +127,7 @@ rgb_image, metadata = extract_mosaic_as_rgb(root)
 desc_txt = extract_map_description(root)
 
 map_rect_regex = re.compile(
-    "MapRectMM=([0-9.E]+),([0-9.E]+),([0-9.E]+),([0-9.E]+)")
+    "MapRectMM=([0-9.E\-]+),([0-9.E\-]+),([0-9.E\-]+),([0-9.E\-]+)")
 
 coords_str = re.findall(map_rect_regex,desc_txt)[0]
 coords_mm = [float(c) for c in coords_str] #x1, y1. w, h in mm
