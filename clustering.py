@@ -6,7 +6,7 @@ Created on Thu Jul 22 14:22:56 2021
 """
 #%% init
 import pandas as pd
-from ete3 import Tree, TreeStyle, NodeStyle
+from ete3 import Tree, TreeStyle, NodeStyle, CircleFace, TextFace
 
 
 xls_data = 'KPV_lognorm.xlsx'
@@ -93,17 +93,52 @@ z = zmatrix(m)
 #%% create tree
 t, t_dict = create_tree(z,data)
 
-#%%
+#%% plot tree
 ts = TreeStyle()
 ts.show_leaf_name = True
 ts.mode = "c"
 ts.show_scale = False
 
 
+# =============================================================================
+# n = t_dict[95]
+# nst1 = NodeStyle()
+# nst1["bgcolor"] = "LightSteelBlue"
+# n.set_style(nst1)
+# =============================================================================
 
-n = t_dict[71]
-nst1 = NodeStyle()
-nst1["bgcolor"] = "LightSteelBlue"
-n.set_style(nst1)
 
-t.show(tree_style=ts)
+
+colors_dict = {4  : 'Salmon',
+               5  : 'Gold',
+               6  : 'Plum',
+               7  : 'DarkSeaGreen'}
+
+    
+
+styles_dict = {4 : NodeStyle(bgcolor = 'Salmon'),
+              5  : NodeStyle(bgcolor = 'Gold'),
+              6  : NodeStyle(bgcolor = 'Plum'),
+              7  : NodeStyle(bgcolor = 'DarkSeaGreen')}
+
+ts.legend.add_face(CircleFace(10, 'Salmon'), column=0)
+ts.legend.add_face(TextFace(' Horizon 4'), column=1)
+ts.legend.add_face(CircleFace(10, 'Gold'), column=0)
+ts.legend.add_face(TextFace(' Horizon 5'), column=1)
+ts.legend.add_face(CircleFace(10, 'Plum'), column=0)
+ts.legend.add_face(TextFace(' Horizon 6'), column=1)
+ts.legend.add_face(CircleFace(10, 'DarkSeaGreen'), column=0)
+ts.legend.add_face(TextFace(' Horizon 7'), column=1)
+
+
+root = t.get_tree_root()
+for leaf in root.iter_leaves():
+    label_id = int(leaf.name)
+    horizon = long_labels.loc[label_id]['horizon']
+    print(leaf.name, horizon)
+    style = styles_dict.get(horizon)
+    leaf.set_style(style)
+
+# t.show(tree_style=ts)
+# t.render('tree.png', w = 200, units = 'mm', dpi = 600,
+#          tree_style = ts)
