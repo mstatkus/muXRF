@@ -7,7 +7,9 @@ Created on Thu Jul 22 14:22:56 2021
 #%% init
 import pandas as pd
 from ete3 import Tree, TreeStyle, NodeStyle, CircleFace, TextFace
-
+from ete3 import faces, PieChartFace
+import matplotlib.cm as cm
+import matplotlib
 
 xls_data = 'KPV_lognorm.xlsx'
 xls_labels = 'table_labels.xlsx'
@@ -93,52 +95,93 @@ z = zmatrix(m)
 #%% create tree
 t, t_dict = create_tree(z,data)
 
-#%% plot tree
-ts = TreeStyle()
-ts.show_leaf_name = True
-ts.mode = "c"
-ts.show_scale = False
+horizons = list(range(4,8)) #TODO - get horizons from label list
 
-
-# =============================================================================
-# n = t_dict[95]
-# nst1 = NodeStyle()
-# nst1["bgcolor"] = "LightSteelBlue"
-# n.set_style(nst1)
-# =============================================================================
-
-
-
-colors_dict = {4  : 'Salmon',
-               5  : 'Gold',
-               6  : 'Plum',
-               7  : 'DarkSeaGreen'}
-
-    
-
-styles_dict = {4 : NodeStyle(bgcolor = 'Salmon'),
-              5  : NodeStyle(bgcolor = 'Gold'),
-              6  : NodeStyle(bgcolor = 'Plum'),
-              7  : NodeStyle(bgcolor = 'DarkSeaGreen')}
-
-ts.legend.add_face(CircleFace(10, 'Salmon'), column=0)
-ts.legend.add_face(TextFace(' Horizon 4'), column=1)
-ts.legend.add_face(CircleFace(10, 'Gold'), column=0)
-ts.legend.add_face(TextFace(' Horizon 5'), column=1)
-ts.legend.add_face(CircleFace(10, 'Plum'), column=0)
-ts.legend.add_face(TextFace(' Horizon 6'), column=1)
-ts.legend.add_face(CircleFace(10, 'DarkSeaGreen'), column=0)
-ts.legend.add_face(TextFace(' Horizon 7'), column=1)
-
+cmap = cm.get_cmap('tab10', 10)    
+hexlist = [matplotlib.colors.rgb2hex(c) for c in cmap.colors]
 
 root = t.get_tree_root()
 for leaf in root.iter_leaves():
     label_id = int(leaf.name)
     horizon = long_labels.loc[label_id]['horizon']
-    print(leaf.name, horizon)
-    style = styles_dict.get(horizon)
+    leaf.horizon = horizon
+
+
+#%% pie charts
+cut_level = 3 #root level = 0
+cmar = 5
+root = t.get_tree_root()
+for node in t.traverse("levelorder"):
+    rdist = node.get_distance(root,topology_only=True)
+    if rdist==cut_level:
+        leaves = node.get_leaves()
+        h_counts = dict.fromkeys(horizons,0)
+        h_total = 0
+        # print (leaves)
+        for leaf in leaves:
+            h_counts[leaf.horizon] += 1
+            h_total += 1
+        percents = []
+        for h in sorted(h_counts):
+            h_counts[h] /= (h_total/100)
+            percents.append(h_counts[h])
+        
+        
+        # print (node.name, percents)
+        f = PieChartFace(percents = percents,
+                         width = 50,
+                         height = 50,
+                         colors = hexlist,
+                         line_color = 'black')
+        f.margin_bottom = cmar
+        f.margin_top = cmar
+        f.margin_left = cmar
+        f.margin_right = cmar
+        
+        node.add_face(f, column=0)
+
+
+
+
+#%% plot tree
+
+
+
+ts = TreeStyle()
+ts.show_leaf_name = True
+ts.mode = "c"
+ts.show_scale = False
+margins = 10
+
+ts.margin_left = margins
+ts.margin_right = margins
+ts.margin_top = margins
+ts.margin_bottom = margins
+
+
+
+colors_dict = dict(zip(horizons,hexlist))
+
+def create_colorstyle(h,colors_dict):
+    c = colors_dict.get(h)
+    ns = NodeStyle(bgcolor = c)
+    return ns
+
+
+styles_dict = {h : create_colorstyle(h,colors_dict) for h in horizons}
+
+for h in horizons:
+    ts.legend.add_face(CircleFace(10, colors_dict.get(h)), column=0)
+    ts.legend.add_face(TextFace(' Horizon {}'.format(h)), column=1)
+
+
+
+root = t.get_tree_root()
+for leaf in root.iter_leaves():
+    style = styles_dict.get(leaf.horizon)
     leaf.set_style(style)
 
 # t.show(tree_style=ts)
-# t.render('tree.png', w = 200, units = 'mm', dpi = 600,
-#          tree_style = ts)
+t.render('tree.svg', w = 200, units = 'mm', dpi = 600,
+          tree_style = ts)
+
