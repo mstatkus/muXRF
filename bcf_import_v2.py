@@ -213,32 +213,26 @@ if __name__ == "__main__":
     print ('Test run')
     import_file = 'fang-A.bcf'
     
-    # hd_bt_str = _load_bruker_bcf_as_bytestream(import_file)
-    # root_xml = _bcf_bytestream2xml(hd_bt_str)
     bcf = BCF_data()
     bcf.load_BCF(import_file)
     mf = bcf.extract_mosaic()
     
-    # mf = MosaicImageArray(mosaic_full)
-    # mf.set_calibration(calibration)
+
     fig, ax = plt.subplots()
     mf.imshow(ax=ax,plot_axes=True)
+    ax.set_title('Full mosaic')
     
     crop_coords_mm = bcf.extract_crop_coords()
     stage_origin_mm = bcf.extract_stage_origin()
     
-    # mc = mf.crop(crop_coords_mm)
-    # fig, ax = plt.subplots()
-    # mc.imshow(ax=ax)
+    mc = mf.crop(crop_coords_mm)
+    fig, ax = plt.subplots()
+    mc.imshow(ax=ax)
+    ax.set_title('Crop mosaic')
 
-
-
-    
-
-
-
-
-
+    fig, ax = plt.subplots()
+    mf.imshow(ax=ax,plot_axes=True)
+    ax.set_title('Full mosaic with points')
     x = [99.149, 93.108, 81.709, 74.138] #coords from spx files
     y = [61.348, 59.679, 56.652, 66.077]
     
@@ -248,7 +242,3 @@ if __name__ == "__main__":
                                  p)
         ax.scatter(pm[0],pm[1],color='white')
   
-
-    
-    
-
