@@ -17,16 +17,27 @@ import matplotlib.pyplot as plt
 
 import logging
 _logger = logging.getLogger(__name__)
+_logger.setLevel(logging.INFO)
 
 class XRF_Project():
     def load_from_bcf_file(self,bcf_file):
         bcf = BCF_data()
         bcf.load_BCF(bcf_file)
-        bcf_hs = hs.load(bcf_file) #TODO - remove redundant loading
+        bcf_hs = hs.load(bcf_file) #TODO remove redundant loading
         
         _logger.info('Load BCF file {} OK'.format(bcf_file))
         
         self.hmap = bcf_hs[4] # first four bcf elements are images
+        instrument_type = self.hmap.metadata.Acquisition_instrument
+        if instrument_type.has_item('SEM'):
+            self.hmap.metadata.Acquisition_instrument.SEM.beam_energy = 100
+        elif instrument_type.has_item('TEM'):
+            self.hmap.metadata.Acquisition_instrument.TEM.beam_energy = 100
+        else:
+            _logger.warning('Error setting beam energy in metadata')
+                
+        
+        
         self.bcf_file = bcf_file
         self.mosaic_full = bcf.extract_mosaic()
         self.crop_coords_mm = bcf.extract_crop_coords()
@@ -216,7 +227,7 @@ def extract_coords_from_spx_xml(xml_root):
    
 #%% test run
 if __name__ == "__main__":
-    print ('Test run')
+    _logger.info('Test run')
     import_file = 'fang-A.bcf'
     
     project = XRF_Project()
