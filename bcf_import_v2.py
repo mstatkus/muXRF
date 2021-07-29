@@ -18,7 +18,26 @@ import matplotlib.pyplot as plt
 import logging
 _logger = logging.getLogger(__name__)
 
-     
+class XRF_Project():
+    def load_from_bcf_file(self,bcf_file):
+        bcf = BCF_data()
+        bcf.load_BCF(bcf_file)
+        bcf_hs = hs.load(bcf_file) #TODO - remove redundant loading
+        
+        _logger.info('Load BCF file {} OK'.format(bcf_file))
+        
+        self.hmap = bcf_hs[4] # first four bcf elements are images
+        self.bcf_file = bcf_file
+        self.mosaic_full = bcf.extract_mosaic()
+        self.crop_coords_mm = bcf.extract_crop_coords()
+        self.stage_origin_mm = bcf.extract_stage_origin()
+        self.delta_coords = [x+y for x,y in zip(self.stage_origin_mm[:2],
+                                                self.crop_coords_mm)]
+    
+        self.mosaic_cropped = self.mosaic_full.crop(self.crop_coords_mm)
+        _logger.info('Process BCF file OK')
+        
+        
 
 class BCF_data():
     
@@ -188,21 +207,23 @@ def extract_coords_from_spx_xml(xml_root):
     
     return coords
 
-def stage2mosaic_coords(stage_zero,
-                        crop_coords,
-                        stage_coords):
-    '''
-    Converts stage coordinates to mosaic coordinates\
-    stage_zero - mm coordinates of left-top cropped mosaic corner
-                    in stage coordinagtes
-    crop_coords - mm coordinates of left-top cropped mosaic corner
-                    in full mosaic coordinagtes
-    '''
-    mosaic_coords = []
-    for i in range(2):
-        q = stage_zero[i]+crop_coords[i]-stage_coords[i]
-        mosaic_coords.append(q)
-    return mosaic_coords
+# =============================================================================
+# def stage2mosaic_coords(stage_zero,
+#                         crop_coords,
+#                         stage_coords):
+#     '''
+#     Converts stage coordinates to mosaic coordinates\
+#     stage_zero - mm coordinates of left-top cropped mosaic corner
+#                     in stage coordinagtes
+#     crop_coords - mm coordinates of left-top cropped mosaic corner
+#                     in full mosaic coordinagtes
+#     '''
+#     mosaic_coords = []
+#     for i in range(2):
+#         q = stage_zero[i]+crop_coords[i]-stage_coords[i]
+#         mosaic_coords.append(q)
+#     return mosaic_coords
+# =============================================================================
 
 
     
@@ -213,32 +234,29 @@ if __name__ == "__main__":
     print ('Test run')
     import_file = 'fang-A.bcf'
     
-    bcf = BCF_data()
-    bcf.load_BCF(import_file)
-    mf = bcf.extract_mosaic()
-    
+    project = XRF_Project()
+    project.load_from_bcf_file(import_file)
+ 
 
     fig, ax = plt.subplots()
-    mf.imshow(ax=ax,plot_axes=True)
+    project.mosaic_full.imshow(ax=ax,plot_axes=True)
     ax.set_title('Full mosaic')
-    
-    crop_coords_mm = bcf.extract_crop_coords()
-    stage_origin_mm = bcf.extract_stage_origin()
-    
-    mc = mf.crop(crop_coords_mm)
-    fig, ax = plt.subplots()
-    mc.imshow(ax=ax)
-    ax.set_title('Crop mosaic')
 
     fig, ax = plt.subplots()
-    mf.imshow(ax=ax,plot_axes=True)
+    project.mosaic_cropped.imshow(ax=ax)
+    ax.set_title('Cropped mosaic')
+    
+ 
+
+    fig, ax = plt.subplots()
+    project.mosaic_full.imshow(ax=ax,plot_axes=True)
     ax.set_title('Full mosaic with points')
     x = [99.149, 93.108, 81.709, 74.138] #coords from spx files
     y = [61.348, 59.679, 56.652, 66.077]
     
     for p in zip(x,y):
-        pm = stage2mosaic_coords(stage_origin_mm,
-                                 crop_coords_mm,
-                                 p)
+        pm = tuple(map(lambda i, j: i - j, project.delta_coords, p))
+        
+        
         ax.scatter(pm[0],pm[1],color='white')
   
