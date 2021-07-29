@@ -8,7 +8,7 @@ Created on Sun Jul 25 13:40:28 2021
 import hyperspy.api as hs
 import hyperspy.io_plugins.bruker as bru
 import xml.etree.ElementTree as ET
-# from PIL import Image
+from PIL import Image
 import codecs
 import re
 import numpy as np
@@ -173,7 +173,11 @@ class MosaicImageArray():
         crop_mosaic = MosaicImageArray(cropped)
         crop_mosaic.set_calibration(self.calibration)
         
-        return crop_mosaic 
+        return crop_mosaic
+    
+    def save_as_image(self, filename, **kwargs):
+        img = Image.fromarray(self.rgb_array)
+        img.save(filename, **kwargs)
         
 
 def load_bcf_dump_xml(bcf_file,xml_file):
@@ -207,26 +211,7 @@ def extract_coords_from_spx_xml(xml_root):
     
     return coords
 
-# =============================================================================
-# def stage2mosaic_coords(stage_zero,
-#                         crop_coords,
-#                         stage_coords):
-#     '''
-#     Converts stage coordinates to mosaic coordinates\
-#     stage_zero - mm coordinates of left-top cropped mosaic corner
-#                     in stage coordinagtes
-#     crop_coords - mm coordinates of left-top cropped mosaic corner
-#                     in full mosaic coordinagtes
-#     '''
-#     mosaic_coords = []
-#     for i in range(2):
-#         q = stage_zero[i]+crop_coords[i]-stage_coords[i]
-#         mosaic_coords.append(q)
-#     return mosaic_coords
-# =============================================================================
-
-
-    
+  
     
    
 #%% test run
@@ -236,6 +221,8 @@ if __name__ == "__main__":
     
     project = XRF_Project()
     project.load_from_bcf_file(import_file)
+    
+    project.mosaic_full.save_as_image('mosaic_full_test.jpg',dpi=(300,300))
  
 
     fig, ax = plt.subplots()
