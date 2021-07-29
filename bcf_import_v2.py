@@ -14,6 +14,8 @@ import re
 import numpy as np
 import struct
 import matplotlib.pyplot as plt
+from pathlib import Path
+
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -39,6 +41,7 @@ class XRF_Project():
         
         
         self.bcf_file = bcf_file
+        self.stem_filename = Path(bcf_file).stem
         self.mosaic_full = bcf.extract_mosaic()
         self.crop_coords_mm = bcf.extract_crop_coords()
         self.stage_origin_mm = bcf.extract_stage_origin()
@@ -47,6 +50,12 @@ class XRF_Project():
     
         self.mosaic_cropped = self.mosaic_full.crop(self.crop_coords_mm)
         _logger.info('Process BCF file OK')
+        
+    def save_mosaic_files_as_jpeg(self,**kwargs):
+        self.mosaic_full.save_as_image('{}_mosaic_full.jpg'.format(
+            self.stem_filename), **kwargs)
+        self.mosaic_cropped.save_as_image('{}_mosaic_cropped.jpg'.format(
+            self.stem_filename), **kwargs)
         
         
 
@@ -232,8 +241,9 @@ if __name__ == "__main__":
     
     project = XRF_Project()
     project.load_from_bcf_file(import_file)
-    
-    project.mosaic_full.save_as_image('mosaic_full_test.jpg',dpi=(300,300))
+    project.save_mosaic_files_as_jpeg(dpi=(300,300))
+    # project.mosaic_full.save_as_image('mosaic_full_test.jpg',dpi=(300,300))
+    project
  
 
     fig, ax = plt.subplots()
