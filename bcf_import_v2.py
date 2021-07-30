@@ -49,6 +49,7 @@ class XRF_Project():
                                                 self.crop_coords_mm)]
     
         self.mosaic_cropped = self.mosaic_full.crop(self.crop_coords_mm)
+        self.extent = self.mosaic_cropped.extent
         _logger.info('Process BCF file OK')
         
     def save_mosaic_files_as_jpeg(self,**kwargs):
@@ -56,8 +57,43 @@ class XRF_Project():
             self.stem_filename), **kwargs)
         self.mosaic_cropped.save_as_image('{}_mosaic_cropped.jpg'.format(
             self.stem_filename), **kwargs)
+    
+    def get_intensity_maps(self, **kwargs):
+        im_list = self.hmap.get_lines_intensity(**kwargs)
+        im_dict = {}
+        elements = []
+        for i in im_list:
+            elt = i.metadata.Sample.elements[0]
+            im_dict[elt] = i
+            elements.append(elt)
         
+        self.elements = elements
+        self.imaps = im_dict
         
+    def imshow(self, element, ax=None, plot_axes = False, **kwargs):
+        try:
+            imaps = self.imaps
+        except AttributeError:
+            _logger.error('No intensity maps exist,' 
+                          'call self.get_intensity maps() first')
+            return None
+        try:
+            data = imaps[element].data
+        except KeyError:
+            _logger.error('No such element: {} in imaps'.format(element))
+            return None
+        
+        if ax is None:
+            ax = plt.gca()
+            
+        ax.imshow(X = data,
+                  extent = self.extent,
+                  **kwargs)
+        
+        if plot_axes == False:
+            ax.get_xaxis().set_visible(False)
+            ax.get_yaxis().set_visible(False)
+        return ax
 
 class BCF_data():
     
@@ -173,6 +209,8 @@ class MosaicImageArray():
         if plot_axes == False:
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
+        
+        return ax
             
     def crop(self, crop_coords_mm):
         
@@ -198,7 +236,10 @@ class MosaicImageArray():
     def save_as_image(self, filename, **kwargs):
         img = Image.fromarray(self.rgb_array)
         img.save(filename, **kwargs)
+
         
+   
+    
 
 def load_bcf_dump_xml(bcf_file,xml_file):
     '''
@@ -241,30 +282,34 @@ if __name__ == "__main__":
     
     project = XRF_Project()
     project.load_from_bcf_file(import_file)
-    project.save_mosaic_files_as_jpeg(dpi=(300,300))
-    # project.mosaic_full.save_as_image('mosaic_full_test.jpg',dpi=(300,300))
-    project
- 
-
-    fig, ax = plt.subplots()
-    project.mosaic_full.imshow(ax=ax,plot_axes=True)
-    ax.set_title('Full mosaic')
-
-    fig, ax = plt.subplots()
-    project.mosaic_cropped.imshow(ax=ax)
-    ax.set_title('Cropped mosaic')
+    project.get_intensity_maps()
     
- 
-
-    fig, ax = plt.subplots()
-    project.mosaic_full.imshow(ax=ax,plot_axes=True)
-    ax.set_title('Full mosaic with points')
-    x = [99.149, 93.108, 81.709, 74.138] #coords from spx files
-    y = [61.348, 59.679, 56.652, 66.077]
     
-    for p in zip(x,y):
-        pm = tuple(map(lambda i, j: i - j, project.delta_coords, p))
-        
-        
-        ax.scatter(pm[0],pm[1],color='white')
+# =============================================================================
+#     
+#     project.save_mosaic_files_as_jpeg(dpi=(300,300))
+#     
+# 
+#     fig, ax = plt.subplots()
+#     project.mosaic_full.imshow(ax=ax,plot_axes=True)
+#     ax.set_title('Full mosaic')
+# 
+#     fig, ax = plt.subplots()
+#     project.mosaic_cropped.imshow(ax=ax)
+#     ax.set_title('Cropped mosaic')
+#     
+#  
+# 
+#     fig, ax = plt.subplots()
+#     project.mosaic_full.imshow(ax=ax,plot_axes=True)
+#     ax.set_title('Full mosaic with points')
+#     x = [99.149, 93.108, 81.709, 74.138] #coords from spx files
+#     y = [61.348, 59.679, 56.652, 66.077]
+#     
+#     for p in zip(x,y):
+#         pm = tuple(map(lambda i, j: i - j, project.delta_coords, p))
+#         
+#         
+#         ax.scatter(pm[0],pm[1],color='white')
+# =============================================================================
   
