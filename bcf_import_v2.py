@@ -19,7 +19,7 @@ from pathlib import Path
 
 import logging
 _logger = logging.getLogger(__name__)
-_logger.setLevel(logging.INFO)
+_logger.setLevel(logging.DEBUG)
 
 class XRF_Project():
     def load_from_bcf_file(self,bcf_file):
@@ -86,14 +86,14 @@ class XRF_Project():
         if ax is None:
             ax = plt.gca()
             
-        ax.imshow(X = data,
+        img = ax.imshow(X = data,
                   extent = self.extent,
                   **kwargs)
         
         if plot_axes == False:
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
-        return ax
+        return img
 
 class BCF_data():
     
@@ -155,7 +155,10 @@ class BCF_data():
         txt = txt_enc.decode('ascii')
         
         map_rect_regex = re.compile(
-            "MapRectMM=([0-9.E]+),([0-9.E]+),([0-9.E]+),([0-9.E]+)")
+            "MapRectMM=([0-9.E\-]+),([0-9.E\-]+),([0-9.E\-]+),([0-9.E\-]+)")
+        
+        _logger.debug(txt)
+        
         coords_str = re.findall(map_rect_regex,txt)[0]
         x1,y1,w,h = [float(c) for c in coords_str] #x1, y1. w, h in mm
         coords_mm = [x1,y1,x1+w,y1+h] #x1,y1, x2,y2
