@@ -21,9 +21,9 @@ from PIL import Image
 import os, sys
 from pathlib import Path
 
-import_file = 'IRK-66.bcf'
+# import_file = 'IRK-66.bcf'
 
-# import_file = sys.argv[1] #TODO - replace with proper checks
+import_file = sys.argv[1] #TODO - replace with proper checks
 export_file_stem = Path(import_file).stem
 
 print ('done.')

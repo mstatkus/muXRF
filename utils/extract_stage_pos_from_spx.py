@@ -31,7 +31,7 @@ if __name__ == "__main__":
     import xml.etree.ElementTree as ET
     import pandas as pd
     
-    cdf = pd.DataFrame(columns = ['file','x','y','z'])
+    cdf = pd.DataFrame(columns = ['file','x_s','y_s','z_s'])
     spx_files = glob.glob("*.spx")
     for file in spx_files:
 
