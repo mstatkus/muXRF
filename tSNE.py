@@ -94,3 +94,40 @@ data.to_excel('data_clusters.xlsx')
 g = data.groupby('cluster_labels')
 gmean = g.mean()
 gmean.to_excel('cluster_mean.xlsx')
+
+#%%
+#%%
+colors = {4:'tab:blue',
+          5:'tab:orange',
+          6:'tab:green',
+          7:'tab:red'}
+
+markers =   {0:'o',
+             1:'v',
+             2:'s',
+             3:'P',
+             4:'X',
+             5:'D',
+             6:'*',
+             7:'h'}
+
+groupby_column = 'cluster_labels' #marker based on this column
+color_column = 'horizon'
+
+plt.subplots(dpi=300)
+gr = df.groupby(groupby_column)
+for label, group in gr:
+    # print (g)
+    m = markers[label]
+    plt.scatter(group.x,group.y,
+                c=group[color_column].map(colors),
+                marker=m)
+
+patches_1 = [ plt.plot([],[], marker="o", ls="", color=colors[key], 
+            label="{}".format(key) )[0]  for key in colors.keys()]
+first_legend = plt.legend(handles=patches_1, loc='upper right',title = 'Horizons')
+ax = plt.gca().add_artist(first_legend)
+
+patches_2 = [ plt.plot([],[], marker=markers[key], ls="", color='black', 
+            label="{}".format(key) )[0]  for key in markers.keys()]
+plt.legend(handles=patches_2, loc='lower left',title='Clusters')
