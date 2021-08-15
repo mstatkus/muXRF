@@ -5,6 +5,15 @@ Created on Sun Jul 25 13:40:28 2021
 @author: Михаил
 """
 #%% init
+
+import logging
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.INFO)
+
+import os
+os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = r'C:\WinPython\WPy64-3870\python-3.8.7.amd64\Lib\site-packages\pyqt5_tools\Qt\plugins\platforms'
+_logger.info('Setting QT_QPA_PLATFORM_PLUGIN_PATH')
+
 import hyperspy.api as hs
 import hyperspy.io_plugins.bruker as bru
 import xml.etree.ElementTree as ET
@@ -13,13 +22,10 @@ import codecs
 import re
 import numpy as np
 import struct
-import matplotlib.pyplot as plt
+
 from pathlib import Path
 
-
-import logging
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
+import matplotlib.pyplot as plt
 
 class XRF_Project():
     def load_from_bcf_file(self,bcf_file):
