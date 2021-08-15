@@ -18,7 +18,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 
 import os, sys
 from pathlib import Path
-
+#%%
 try:
     filename = Path(sys.argv[1])
     filename.resolve(strict=True)
@@ -28,8 +28,8 @@ except IndexError:
 except FileNotFoundError:
     print ('{} : No such file'.format(filename))
     sys.exit()
-
-
+#%%
+# filename = Path('KPV-74-map-Rh.bcf')
 short_filename = filename.stem
 
 p = bcf.XRF_Project()
@@ -56,8 +56,10 @@ for elt in p.elements:
     ax.add_artist(scalebar)
     
     plt.colorbar(img)
+    
+    # plt.tight_layout()
     png_filename = '{}_{}.png'.format(elt,short_filename)
-    plt.savefig(png_filename)
+    plt.savefig(png_filename, bbox_inches='tight')
     _logger.info('Saved {} map Ok'.format(elt))
     
 
@@ -92,6 +94,6 @@ scalebar = ScaleBar(1, "mm", length_fraction=0.25,
 ax.add_artist(scalebar)
 
 png_filename = '{}_{}.png'.format('mosaic',short_filename)
-plt.savefig(png_filename)
+plt.savefig(png_filename, bbox_inches='tight')
 _logger.info('Saved scalebar mosaic Ok')
 _logger.info('Processing done, quitting')
